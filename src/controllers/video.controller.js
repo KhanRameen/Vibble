@@ -133,7 +133,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
 
 const getVideoById = asyncHandler(async (req, res) => {
     const { videoId } = req.params
-    //TODO: get video by id
+
     if(!mongoose.Types.ObjectId.isValid(videoId)){
         throw new ApiError(400,"Invalid Video Id")
     }
@@ -163,6 +163,7 @@ const deleteVideo = asyncHandler(async (req, res) => {
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
     const { videoId } = req.params
+
 })
 
 export {
