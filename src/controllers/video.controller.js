@@ -10,12 +10,57 @@ import {uploadOnCloudinary} from "../utils/cloudinary.js"
 const getAllVideos = asyncHandler(async (req, res) => {
     const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query
     //TODO: get all videos based on query, sort, pagination
+    if(!userId){
+        throw new ApiError(400,"Missing User ID");
+    }
+
+    if(!User.findById(userId)){
+        throw new ApiError(400,"User not found");
+    }
+
+    const videos= await Video.aggregate([
+      {
+        $match:{
+            owner: userId
+        }
+      }  ,
+      {
+        $project:{
+            videoFile:1,
+            title:1,
+            duration:1,
+            thumbnail:1,
+        }
+      }
+    ])
+
+    const paginationOptions={
+        page,
+        limit,
+        sortBy: sortBy,  
+        sortType,     
+        // query,
+
+    }
+
+    const AllVideos= await Video.aggregatePaginate(videos,paginationOptions)
+
+    console.log(AllVideos);
+
+    return res
+    .status(200)
+    .json(new ApiResponse(
+        200,
+        AllVideos,
+        "All Videos fetched successfully"
+    ))
+    
+
 })
 
+
 const publishAVideo = asyncHandler(async (req, res) => {
-    // TODO: get video, upload to cloudinary, create video
     
-  
    const { title, description} = req.body
    
    //Optional Description,Mandatory title
@@ -30,8 +75,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
     }
     const userId=user._id
 
-    //TWO MIDDLEWARES - req.file is overwritten, so use req.videoFile and req.imageFile
-    // const videotoUpload=req.file?.videoFile?.[0]?.path
+    //req.files overwritten in multer media middleware
     const videotoUpload=req.videoFile?.videoFile?.[0]?.path
     const thumbnailtoUpload=req.imageFile?.thumbnail?.[0]?.path
 
@@ -74,7 +118,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
         // ispublished,
 
     })
-
+       
     //check if the video is uploaded on DB
     const check=await Video.findById(VideoUpload._id)
     if(!check){
@@ -90,6 +134,20 @@ const publishAVideo = asyncHandler(async (req, res) => {
 const getVideoById = asyncHandler(async (req, res) => {
     const { videoId } = req.params
     //TODO: get video by id
+    if(!mongoose.Types.ObjectId.isValid(videoId)){
+        throw new ApiError(400,"Invalid Video Id")
+    }
+  
+
+    const video=await Video.findById(videoId)
+    if(!video){
+        throw new ApiError(400,"Video not Found")
+    }
+
+    console.log(video);
+    
+    return res.status(200).json(new ApiResponse(200,video,"Video Fetched Successfully"))
+
 })
 
 const updateVideo = asyncHandler(async (req, res) => {
